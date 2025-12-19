@@ -19,3 +19,6 @@ python-multipart==0.0.9
 
 # ---------- Production ----------
 gunicorn==22.0.0
+
+--- ---------- Development & Testing ----------
+psutil
