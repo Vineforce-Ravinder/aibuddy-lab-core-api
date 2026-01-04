@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
+from app.api.routes.health import HealthRouter, health
+from app.api.routes.user_router import UserRouter
 from app.config import settings
 from app.config.logging import setup_logging
 from app.api.middleware.cors import setup_cors
-from app.api.routes import router as api_router
 from app.infrastructure.startup import on_startup, on_shutdown
 
 
@@ -27,8 +28,11 @@ def create_app() -> FastAPI:
     )
 
     setup_cors(app)
+    health_router = HealthRouter()
+    app.include_router(health_router.router, prefix="/api", tags=["Health"])
+    user_router = UserRouter()
+    app.include_router(user_router.router, prefix="/api/v1", tags=["Users"])
 
-    app.include_router(api_router, prefix="/api")
 
     return app
 
