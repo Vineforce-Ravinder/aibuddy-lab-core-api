@@ -1,10 +1,10 @@
 
 # Create a router for user endpoints
 from http.client import HTTPException
-import stat
 from fastapi import APIRouter, Depends
-
+from starlette import status 
 from app.api.middleware.dependencies import get_user_service
+from app.api.security.decorators import authorize
 from app.core.dto.userdto import ApiResponseDTO, UserDTO, UserResponseDTO
 from app.core.services.user_service import UserService
 
@@ -22,6 +22,10 @@ class UserRouter:
             "/create-user",
             response_model=ApiResponseDTO,
             status_code=201
+        )
+        @authorize(
+          roles=["ADMIN"],
+           permissions=["user:create"]
         )
         def create_user(
             dto: UserDTO,
@@ -46,6 +50,6 @@ class UserRouter:
                 )
             except ValueError as e:
                 raise HTTPException(
-                    status_code=stat.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_400_BAD_REQUEST,
                     detail=str(e)
                 )

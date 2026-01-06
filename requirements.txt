@@ -28,3 +28,6 @@ sqlalchemy
 psycopg2-binary 
 alembic 
 bcrypt 
+passlib[bcrypt]
+python-jose[cryptography]
+

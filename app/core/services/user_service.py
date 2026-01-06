@@ -10,7 +10,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
 from typing import Optional, List
-
+from app.api.security.password import verify_password
 from app.infrastructure.db.models.user import User
 
 class UserService:
@@ -145,3 +145,24 @@ class UserService:
         db.delete(user)
         db.commit()
         return True
+
+    def authenticate_user(self, username: str, password: str) -> User | None:
+        """
+        Fetch user from DB and verify credentials
+        """
+        user = (
+            self.db.query(User)
+            .filter(User.username == username)
+            .first()
+        )
+
+        if not user:
+            return None
+
+        if not verify_password(password, user.password_hash):
+            return None
+
+        if not user.is_active:
+            return None
+
+        return user

@@ -21,3 +21,8 @@ class ApiResponseDTO(BaseModel):
     status: str  # "success" / "error"
     message: str
     data: Optional[any] = None
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    
