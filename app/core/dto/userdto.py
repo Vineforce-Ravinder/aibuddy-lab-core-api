@@ -1,28 +1,66 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+# app/core/dto/userdto.py
 
-# Input DTO
-class UserDTO(BaseModel):
-    first_name: str
-    last_name: Optional[str] = None
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Any
+from datetime import date
+
+# --------------------------------------------------------
+# 1. Base DTO (Shared Fields)
+# --------------------------------------------------------
+class UserBaseDTO(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, max_length=100)
     email: EmailStr
-    password: str  # You can hash this in the service
+    phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
 
-# Response DTO
-class UserResponseDTO(BaseModel):
-    id: int
-    first_name: str
-    last_name: Optional[str]
-    email: EmailStr
+# --------------------------------------------------------
+# 2. Input DTOs
+# --------------------------------------------------------
 
-# Generic API Response DTO
-class ApiResponseDTO(BaseModel):
-    status_code: int
-    status: str  # "success" / "error"
-    message: str
-    data: Optional[any] = None
+# For CREATING a user (Password is required)
+class UserDTO(UserBaseDTO):
+    password: str = Field(..., min_length=8)
+    role_id: Optional[int] = None 
 
+# For UPDATING a user (Everything is optional)
+class UserUpdateDTO(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, max_length=100)
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
+    password: Optional[str] = Field(None, min_length=8)  # New password (optional)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "first_name": "UpdatedName",
+                "email": "newemail@example.com",
+                "password": "newsecurepassword123"
+            }
+        }
+
+# DTO for Login (Added from upstream)
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+# --------------------------------------------------------
+# 3. Output DTOs (Response)
+# --------------------------------------------------------
+
+class UserResponseDTO(UserBaseDTO):
+    id: str  # FIX: UUID string, NOT int
+    is_active: bool = True
     
+    class Config:
+        from_attributes = True
+
+# --------------------------------------------------------
+# 4. API Wrapper
+# --------------------------------------------------------
+
+class ApiResponseDTO(BaseModel):
+    # status_code: int # Removed status_code (usually redundant in body if HTTP header is 200)
+    status: str
+    message: str
+    data: Optional[Any] = None  # Corrected to uppercase Any
