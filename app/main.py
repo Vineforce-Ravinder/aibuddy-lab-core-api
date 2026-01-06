@@ -1,15 +1,17 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from fastapi.openapi.utils import get_openapi
 
-# Import your routers
 from app.api.routes.authentication_router import AuthRouter
 from app.api.routes.health import HealthRouter
 from app.api.routes.user_router import UserRouter
-
-# Import DB session and models for seeding
-from app.infrastructure.db.session import SessionLocal
+from app.config import settings
+from app.config.logging import setup_logging
+from app.api.middleware.cors import setup_cors
+from app.infrastructure.startup import on_startup, on_shutdown
 from app.infrastructure.db.models.role import Role
+from app.infrastructure.db.session import SessionLocal
+
 
 def seed_roles():
     """Checks if roles exist, if not, adds them."""
@@ -37,38 +39,67 @@ def seed_roles():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- STARTUP LOGIC ---
-    print("🚀 AI Buddy starting up")
-    seed_roles()  # <--- THIS RUNS AUTOMATICALLY ON START
+    await on_startup()
+    seed_roles() # Seed roles on startup
     yield
-    # --- SHUTDOWN LOGIC ---
-    print("🛑 AI Buddy shutting down")
+    await on_shutdown()
+
 
 def create_app() -> FastAPI:
+    setup_logging()
+
     app = FastAPI(
-        title="AI Buddy API",
-        version="1.0.0",
-        lifespan=lifespan  # Register the lifespan (startup/shutdown)
+        title=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        lifespan=lifespan,
+        docs_url="/docs" if settings.ENV != "production" else None,
+        redoc_url="/redoc" if settings.ENV != "production" else None,
     )
 
-    # Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Reset schema cache
+    app.openapi_schema = None
 
-    # Routers
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+
+        openapi_schema = get_openapi(
+            title=settings.PROJECT_NAME,
+            version=settings.VERSION,
+            routes=app.routes,
+        )
+
+        # 🔐 JWT Bearer Security Scheme
+        openapi_schema.setdefault("components", {})
+        openapi_schema["components"]["securitySchemes"] = {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+
+        # 🔐 Apply globally
+        openapi_schema["security"] = [{"BearerAuth": []}]
+
+        app.openapi_schema = openapi_schema
+        return app.openapi_schema
+
+    # Override OpenAPI
+    app.openapi = custom_openapi
+
+    # Middlewares & Routers
+    setup_cors(app)
+
     health_router = HealthRouter()
-    user_router = UserRouter()
-    auth_router = AuthRouter()
-
     app.include_router(health_router.router, prefix="/api", tags=["Health"])
-    app.include_router(auth_router.router, prefix="/api", tags=["Auth"])
+
+    user_router = UserRouter()
     app.include_router(user_router.router, prefix="/api/v1", tags=["Users"])
 
+    auth_router = AuthRouter()
+    app.include_router(auth_router.router, prefix="/api", tags=["Auth"])
     return app
+
 
 app = create_app()

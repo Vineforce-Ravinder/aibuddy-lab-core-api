@@ -12,7 +12,7 @@ from app.core.services.user_service import UserService
 
 class AuthRouter:
     def __init__(self):
-        self.router = APIRouter(prefix="/connect", tags=["Authentication"])
+        self.router = APIRouter(prefix="/connect", tags=["Auth"])
 
         @self.router.post("/connect")
         def connect_admin():
@@ -29,7 +29,7 @@ class AuthRouter:
                         "status:read"
                     ]
                 }
-                
+
                 token = generate_token(user)
 
                 return {
