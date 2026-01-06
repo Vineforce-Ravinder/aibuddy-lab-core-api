@@ -84,7 +84,7 @@ class UserService:
     def get_user_by_email(self, email: str) -> Optional[User]:
         return UserRepository.get_user_by_email(self.db, email)
     
-    def list_users(self, skip: int = 0, limit: int = 10) -> List[User]:
+    def get_all_users(self, skip: int = 0, limit: int = 10) -> List[User]:
         """
         Get list of users with pagination
         """

@@ -110,7 +110,7 @@ class UserRouter:
         # -----------------------------
         # 4. DELETE USER
         # -----------------------------
-        @self.router.delete(
+        @self.router.get(
             "/{user_id}",
             response_model=ApiResponseDTO,
             status_code=status.HTTP_200_OK
@@ -130,4 +130,29 @@ class UserRouter:
                 status="success",
                 message="User deleted successfully",
                 data=None
+            )
+
+        
+        # -----------------------------
+        # 5. GET ALL USERS
+        # -----------------------------
+        @self.router.get(
+            "/get-all-users",
+            response_model=ApiResponseDTO,
+            status_code=status.HTTP_200_OK
+        )
+        def get_all_users(
+            user_service: UserService = Depends(get_user_service)
+        ):
+            success = user_service.get_all_users()
+            if not success:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Some thing went wrong while fetching users"
+                )
+
+            return ApiResponseDTO(
+                status="success",
+                message="Users fetched successfully",
+                data=success
             )
