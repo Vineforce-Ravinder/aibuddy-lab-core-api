@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import pool
 
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:Hunter%40321@localhost:5432/aitutorlabdb"
+from app.config import settings
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(url=settings.DATABASE_URL, pool_pre_ping=True, poolclass=pool.NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
