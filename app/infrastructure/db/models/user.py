@@ -31,10 +31,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import Session, relationship
 from typing import Optional, List, TYPE_CHECKING
 
-# FIX 1: TYPE_CHECKING to prevent circular import error
-if TYPE_CHECKING:
-    from app.infrastructure.db.models.role import Role
-
 # ============================
 # USER MODEL (SCHEMA)
 # ============================
@@ -81,59 +77,3 @@ class User(BaseModel):
 
     # Many users -> one role
     role = relationship("Role", back_populates="users")
-
-
-# ============================
-# CRUD OPERATIONS (Restored)
-# ============================
-
-class UserRepository:
-    """
-    Repository class to handle all database operations for the User model.
-    Follows Single Responsibility Principle for data access.
-    """
-
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
-        return db.query(User).filter(User.id == user_id).first()
-
-    @staticmethod
-    def get_user_by_email(db: Session, email: str) -> Optional[User]:
-        return db.query(User).filter(User.email == email).first()
-
-    @staticmethod
-    def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
-        return db.query(User).offset(skip).limit(limit).all()
-
-    @staticmethod
-    def update_user(db: Session, user_id: str, update_data: dict) -> Optional[User]:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            return None
-
-        for key, value in update_data.items():
-            if hasattr(user, key):
-                setattr(user, key, value)
-        
-        try:
-            db.commit()
-            db.refresh(user)
-        except Exception as e:
-            db.rollback()
-            raise e
-            
-        return user
-
-    @staticmethod
-    def delete_user(db: Session, user_id: str) -> bool:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            return False
-
-        try:
-            db.delete(user)
-            db.commit()
-            return True
-        except Exception as e:
-            db.rollback()
-            raise e

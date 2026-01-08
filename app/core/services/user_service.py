@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List, Union
 
 # Imports from your structure
-from app.infrastructure.db.models.user import User, UserRepository
+from app.infrastructure.db.repository.user_repository import UserRepository
 from app.infrastructure.db.models.role import Role
 from app.core.dto.userdto import UserDTO
+from app.infrastructure.db.models.user import User
 
 # Attempt to import password utilities (hash & verify)
 try:
