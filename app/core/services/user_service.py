@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List, Union
+from datetime import datetime
 
 # Imports from your structure
 from app.infrastructure.db.repository.user_repository import UserRepository
@@ -92,25 +93,63 @@ class UserService:
         return UserRepository.get_all_users(self.db, skip, limit)
 
     # ============================
-    # 3. UPDATE
+    # UPDATE USER (PATCH)
     # ============================
-    def update_user(self, user_id: str, update_data: Dict[str, Any]) -> Optional[User]:
+    def update_user(self, user_id: str, update_dto) -> Optional[User]:
         """
-        Updates user fields.
-        Handles password hashing if a new password is provided.
+        Updates user fields from the DTO.
+        Only fields provided by the user are updated.
+        All other fields remain unchanged.
         """
-        # Business Logic: Prevent updating immutable fields
-        if "id" in update_data:
-            del update_data["id"]
-        
-        # Handle Password Update
+
+        # 1. Verify user exists
+        user = UserRepository.get_user_by_id(self.db, user_id)
+        if not user:
+            return None
+
+        # 2. Convert DTO → dict (ONLY fields sent by client)
+        update_data = update_dto.model_dump(exclude_unset=True)
+
+        # 3. Remove immutable / forbidden fields
+        immutable_fields = {"id", "created_at", "updated_at"}
+        for field in immutable_fields:
+            update_data.pop(field, None)
+
+        # 4. Handle password update securely
         if "password" in update_data:
             plain_password = update_data.pop("password")
-            # If password is not empty, hash it and update 'password_hash'
-            if plain_password: 
+            if plain_password:
                 update_data["password_hash"] = get_password_hash(plain_password)
-            
+
+        # 5. Validate email uniqueness (only if email is changing)
+        if "email" in update_data and update_data["email"] != user.email:
+            existing_user = UserRepository.get_user_by_email(
+                self.db, update_data["email"]
+            )
+            if existing_user:
+                raise ValueError("Email already in use by another user")
+
+        # 6. Always update timestamp
+        update_data["updated_at"] = datetime.utcnow()
+
+        # 7. Persist changes
         return UserRepository.update_user(self.db, user_id, update_data)
+
+    # ============================
+    # ALIAS (OPTIONAL)
+    # ============================
+    def update_user_from_dto(self, user_id: str, update_dto) -> Optional[User]:
+        """Alias for clarity in router layer."""
+        return self.update_user(user_id, update_dto)
+
+    # ============================
+    # FETCH USER FOR UPDATE FORM
+    # ============================
+    def get_user_for_update_form(self, user_id: str) -> Optional[User]:
+        """
+        Fetches the real user data so frontend can pre-fill update form.
+        """
+        return UserRepository.get_user_by_id(self.db, user_id)
 
     # ============================
     # 4. DELETE
@@ -122,7 +161,7 @@ class UserService:
         return UserRepository.delete_user(self.db, user_id)
 
     # ============================
-    # 5. AUTHENTICATE (Restored from your request)
+    # 5. AUTHENTICATE
     # ============================
     def authenticate_user(self, username: str, password: str) -> Optional[User]:
         """
