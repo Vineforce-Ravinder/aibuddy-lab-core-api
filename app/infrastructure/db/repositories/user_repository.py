@@ -4,12 +4,16 @@ from app.infrastructure.db.models.user import User
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
+from app.infrastructure.db.repositories.base_repository import BaseRepository
+
 
 # ============================
 # CRUD OPERATIONS (Restored)
 # ============================
 
-class UserRepository:
+class UserRepository(BaseRepository[User]):
+    def __init__(self):
+        super().__init__(User)
     """
     Repository class to handle all database operations for the User model.
     Follows Single Responsibility Principle for data access.

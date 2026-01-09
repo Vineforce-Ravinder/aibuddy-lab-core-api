@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 
 # Imports from your structure
-from app.infrastructure.db.repository.user_repository import UserRepository
+from app.infrastructure.db.repositories.user_repository import UserRepository
 from app.infrastructure.db.models.role import Role
 from app.core.dto.userdto import UserDTO
 from app.infrastructure.db.models.user import User
@@ -26,10 +26,11 @@ class UserService:
     Business logic layer for User operations.
     Connects API Routers to Database Repositories.
     """
-
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_repo: UserRepository):
         # The database session is injected automatically by FastAPI dependencies
         self.db = db
+        self.user_repo = user_repo
+
 
     # ============================
     # 1. CREATE
