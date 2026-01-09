@@ -2,11 +2,19 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.core.services.user_service import UserService
 from app.infrastructure.db.session import get_db
+
+from app.infrastructure.db.repositories.user_repository import UserRepository
+
+def get_user_repository(
+    db: Session = Depends(get_db),
+) -> UserRepository:
+    return UserRepository(db)
+
 # -----------------------------
 # UserService dependency
 # -----------------------------
 def get_user_service(db: Session = Depends(get_db)):
-    return UserService(db)
+    return UserService(db,get_user_repository(db))
 
 # # -----------------------------
 # # AgentService dependency
