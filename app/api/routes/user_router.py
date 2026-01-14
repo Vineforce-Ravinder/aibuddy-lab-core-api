@@ -45,7 +45,34 @@ class UserRouter:
                 )
 
         # -----------------------------
-        # 2. GET USER
+        # 2. GET ALL USERS (MOVED HERE - SPECIFIC ROUTES FIRST!)
+        # -----------------------------
+        @self.router.get(
+            "/get-all-users",
+            response_model=ApiResponseDTO,
+            status_code=status.HTTP_200_OK
+        )
+        def get_all_users(
+            user_service: UserService = Depends(get_user_service)
+        ):
+            users = user_service.get_all_users()
+            if users is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Something went wrong while fetching users"
+                )
+
+            # Serialize SQLAlchemy User objects to UserResponseDTOs
+            user_dtos = [UserResponseDTO.model_validate(user) for user in users]
+
+            return ApiResponseDTO(
+                status="success",
+                message="Users fetched successfully",
+                data=user_dtos
+            )
+
+        # -----------------------------
+        # 3. GET USER
         # -----------------------------
         @self.router.get(
             "/{user_id}",
@@ -64,14 +91,17 @@ class UserRouter:
                 )
             
             return ApiResponseDTO(
-                status="success",
-                message="User retrieved successfully",
-                data=UserResponseDTO.model_validate(user)
-            )
+                    status="success",
+                    message="User retrieved successfully",
+                    data=UserResponseDTO.model_validate(user)
+                )
 
         # -----------------------------
-        # 3. UPDATE USER
-        # -----------------------------
+        # 4. PERFORM UPDATE (UPDATE)
+        # When user hits this API, response shows REAL current user data
+        # User can change only the fields they want
+        # Only changed fields update in database, others remain unchanged
+        # ----------------------------- 
         @self.router.put(
             "/{user_id}",
             response_model=ApiResponseDTO,
@@ -79,17 +109,14 @@ class UserRouter:
         )
         def update_user(
             user_id: str,
-            dto: UserUpdateDTO, # FIX: Use specific DTO so Swagger works
+            dto: UserUpdateDTO, 
             user_service: UserService = Depends(get_user_service)
         ):
-            """
-            Update user details.
-            """
+          
             try:
-                # exclude_unset=True ensures we don't erase fields we didn't send
-                update_data = dto.model_dump(exclude_unset=True)
+                # Only fields provided in the request will be updated
+                updated_user = user_service.update_user_from_dto(user_id, dto)
                 
-                updated_user = user_service.update_user(user_id, update_data)
                 if not updated_user:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
@@ -101,6 +128,12 @@ class UserRouter:
                     message="User updated successfully",
                     data=UserResponseDTO.model_validate(updated_user)
                 )
+            except ValueError as e:
+                # Catch business logic errors (e.g., duplicate email)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -108,9 +141,9 @@ class UserRouter:
                 )
 
         # -----------------------------
-        # 4. DELETE USER
+        # 5. DELETE USER
         # -----------------------------
-        @self.router.get(
+        @self.router.delete(
             "/{user_id}",
             response_model=ApiResponseDTO,
             status_code=status.HTTP_200_OK
@@ -130,29 +163,4 @@ class UserRouter:
                 status="success",
                 message="User deleted successfully",
                 data=None
-            )
-
-        
-        # -----------------------------
-        # 5. GET ALL USERS
-        # -----------------------------
-        @self.router.get(
-            "/get-all-users",
-            response_model=ApiResponseDTO,
-            status_code=status.HTTP_200_OK
-        )
-        def get_all_users(
-            user_service: UserService = Depends(get_user_service)
-        ):
-            success = user_service.get_all_users()
-            if not success:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Some thing went wrong while fetching users"
-                )
-
-            return ApiResponseDTO(
-                status="success",
-                message="Users fetched successfully",
-                data=success
             )

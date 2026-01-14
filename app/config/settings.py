@@ -12,10 +12,10 @@ class Settings(BaseSettings):
     
     # Ravinder changed the DB URL for Postgresql connection
 
-    DATABASE_URL:str = 'postgresql://postgres:123456@localhost:5432/aitutorlabdb'
+    #DATABASE_URL:str = 'postgresql://postgres:123456@localhost:5432/aitutorlabdb'
 
     # Anmol changed the DB URL for Postgresql connection
-    # DATABASE_URL: str = "postgresql://postgres:Hunter%40321@localhost:5432/aitutorlabdb"
+    DATABASE_URL: str = "postgresql://postgres:Hunter%40321@localhost:5432/aitutorlabdb"
         
 
     class Config:
