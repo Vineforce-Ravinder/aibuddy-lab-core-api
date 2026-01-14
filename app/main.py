@@ -5,6 +5,9 @@ from fastapi.openapi.utils import get_openapi
 from app.api.routes.authentication_router import AuthRouter
 from app.api.routes.health import HealthRouter
 from app.api.routes.user_router import UserRouter
+from app.api.routes.course_router import CourseRouter
+from app.api.routes.module_router import ModuleRouter
+from app.api.routes.topic_router import TopicRouter
 from app.config import settings
 from app.config.logging import setup_logging
 from app.api.middleware.cors import setup_cors
@@ -96,6 +99,15 @@ def create_app() -> FastAPI:
 
     user_router = UserRouter()
     app.include_router(user_router.router, prefix="/api/v1", tags=["Users"])
+
+    course_router = CourseRouter()
+    app.include_router(course_router.router, prefix="/api/v1", tags=["Courses"])
+
+    module_router = ModuleRouter()
+    app.include_router(module_router.router, prefix="/api/v1", tags=["Modules"])
+
+    topic_router = TopicRouter()
+    app.include_router(topic_router.router, prefix="/api/v1", tags=["Topics"])
 
     auth_router = AuthRouter()
     app.include_router(auth_router.router, prefix="/api", tags=["Auth"])
