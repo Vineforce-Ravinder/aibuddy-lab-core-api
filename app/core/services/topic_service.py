@@ -5,7 +5,7 @@ from typing import List, Optional
 from app.infrastructure.db.repositories.topic_repository import TopicRepository
 from app.infrastructure.db.repositories.module_repository import ModuleRepository
 from app.infrastructure.db.models.topic import Topic
-from app.core.dto.topicdto import TopicDTO, TopicUpdateDTO
+from app.core.dto.topicdto import TopicDTO
 
 
 class TopicService:
@@ -41,7 +41,7 @@ class TopicService:
         """Get published topics for module"""
         return TopicRepository.get_published_topics_by_module(self.db, module_id)
 
-    def update_topic(self, topic_id: str, dto: TopicUpdateDTO) -> Topic:
+    def update_topic(self, topic_id: str, dto: TopicDTO) -> Topic:
         """Update topic"""
         topic = TopicRepository.get_topic_by_id(self.db, topic_id)
         if not topic:

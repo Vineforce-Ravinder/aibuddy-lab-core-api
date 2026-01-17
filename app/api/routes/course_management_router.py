@@ -7,9 +7,9 @@ from app.api.middleware.dependencies import (
     get_module_service,
     get_topic_service
 )
-from app.core.dto.coursedto import ApiResponseDTO, CourseDTO, CourseResponseDTO, CourseUpdateDTO
-from app.core.dto.moduledto import ModuleDTO, ModuleResponseDTO, ModuleUpdateDTO
-from app.core.dto.topicdto import TopicDTO, TopicResponseDTO, TopicResponseDTOWithoutModule, TopicUpdateDTO
+from app.core.dto.coursedto import ApiResponseDTO, CourseDTO
+from app.core.dto.moduledto import ModuleDTO
+from app.core.dto.topicdto import TopicDTO
 from app.core.services.course_service import CourseService
 from app.core.services.module_service import ModuleService
 from app.core.services.topic_service import TopicService
@@ -35,18 +35,23 @@ class CourseManagementRouter:
             dto: CourseDTO,
             course_service: CourseService = Depends(get_course_service)
         ):
-            """Create a new course"""
+            """Create a new course with full hierarchy"""
             try:
-                course = course_service.create_course(dto)
+                course = course_service.create_or_update_course(dto)
                 return ApiResponseDTO(
                     status="success",
                     message="Course created successfully",
-                    data=CourseResponseDTO.model_validate(course)
+                    data=CourseDTO.model_validate(course)
                 )
             except ValueError as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=str(e)
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create course"
                 )
 
         @self.router.get(
@@ -63,20 +68,28 @@ class CourseManagementRouter:
             """Get all courses with pagination (includes nested modules and topics)"""
             try:
                 courses = course_service.get_all_courses(skip, limit)
+                
+                if not courses:
+                    return ApiResponseDTO(
+                        status="success",
+                        message="No courses found",
+                        data=[]
+                    )
+                
+                # Build courses data with nested modules and topics
                 courses_data = []
                 for c in courses:
-                    course_dto = CourseResponseDTO.model_validate(c)
-                    # Load nested modules with topics
+                    course_dto = CourseDTO.model_validate(c)
                     if c.modules:
                         modules_data = []
                         for m in c.modules:
-                            module_dto = ModuleResponseDTO.model_validate(m)
-                            # Load nested topics
+                            module_dto = ModuleDTO.model_validate(m)
                             if m.topics:
-                                module_dto.topics = [TopicResponseDTOWithoutModule.model_validate(t) for t in m.topics]
+                                module_dto.topics = [TopicDTO.model_validate(t) for t in m.topics]
                             modules_data.append(module_dto)
                         course_dto.modules = modules_data
                     courses_data.append(course_dto)
+                
                 return ApiResponseDTO(
                     status="success",
                     message="Courses retrieved successfully",
@@ -85,7 +98,7 @@ class CourseManagementRouter:
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to retrieve courses"
+                    detail=f"Failed to retrieve courses: {str(e)}"
                 )
 
         @self.router.get(
@@ -123,70 +136,6 @@ class CourseManagementRouter:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to retrieve courses"
-                )
-
-        @self.router.get(
-            "/{course_id}",
-            response_model=ApiResponseDTO,
-            status_code=status.HTTP_200_OK,
-            summary="Get a specific course"
-        )
-        def get_course(
-            course_id: str,
-            course_service: CourseService = Depends(get_course_service)
-        ):
-            """Get a specific course by ID (includes nested modules and topics)"""
-            course = course_service.get_course(course_id)
-            if not course:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Course not found"
-                )
-            course_dto = CourseResponseDTO.model_validate(course)
-            # Load nested modules with topics
-            if course.modules:
-                modules_data = []
-                for m in course.modules:
-                    module_dto = ModuleResponseDTO.model_validate(m)
-                    # Load nested topics
-                    if m.topics:
-                        module_dto.topics = [TopicResponseDTOWithoutModule.model_validate(t) for t in m.topics]
-                    modules_data.append(module_dto)
-                course_dto.modules = modules_data
-            return ApiResponseDTO(
-                status="success",
-                message="Course retrieved successfully",
-                data=course_dto
-            )
-
-        @self.router.put(
-            "/{course_id}",
-            response_model=ApiResponseDTO,
-            status_code=status.HTTP_200_OK,
-            summary="Update a course"
-        )
-        def update_course(
-            course_id: str,
-            dto: CourseUpdateDTO,
-            course_service: CourseService = Depends(get_course_service)
-        ):
-            """Update a course"""
-            try:
-                course = course_service.update_course(course_id, dto)
-                if not course:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Course not found"
-                    )
-                return ApiResponseDTO(
-                    status="success",
-                    message="Course updated successfully",
-                    data=CourseResponseDTO.model_validate(course)
-                )
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e)
                 )
 
         @self.router.delete(
@@ -232,7 +181,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Module created successfully",
-                    data=ModuleResponseDTO.model_validate(module)
+                    data=ModuleDTO.model_validate(module)
                 )
             except ValueError as e:
                 raise HTTPException(
@@ -256,7 +205,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Modules retrieved successfully",
-                    data=[ModuleResponseDTO.model_validate(m) for m in modules]
+                    data=[ModuleDTO.model_validate(m) for m in modules]
                 )
             except Exception as e:
                 raise HTTPException(
@@ -280,7 +229,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Active modules retrieved successfully",
-                    data=[ModuleResponseDTO.model_validate(m) for m in modules]
+                    data=[ModuleDTO.model_validate(m) for m in modules]
                 )
             except Exception as e:
                 raise HTTPException(
@@ -308,7 +257,7 @@ class CourseManagementRouter:
             return ApiResponseDTO(
                 status="success",
                 message="Module retrieved successfully",
-                data=ModuleResponseDTO.model_validate(module)
+                data=ModuleDTO.model_validate(module)
             )
 
         @self.router.put(
@@ -319,7 +268,7 @@ class CourseManagementRouter:
         )
         def update_module(
             module_id: str,
-            dto: ModuleUpdateDTO,
+            dto: ModuleDTO,
             module_service: ModuleService = Depends(get_module_service)
         ):
             """Update a module"""
@@ -333,7 +282,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Module updated successfully",
-                    data=ModuleResponseDTO.model_validate(module)
+                    data=ModuleDTO.model_validate(module)
                 )
             except ValueError as e:
                 raise HTTPException(
@@ -384,7 +333,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Topic created successfully",
-                    data=TopicResponseDTO.model_validate(topic)
+                    data=TopicDTO.model_validate(topic)
                 )
             except ValueError as e:
                 raise HTTPException(
@@ -408,7 +357,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Topics retrieved successfully",
-                    data=[TopicResponseDTO.model_validate(t) for t in topics]
+                    data=[TopicDTO.model_validate(t) for t in topics]
                 )
             except Exception as e:
                 raise HTTPException(
@@ -432,7 +381,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Active topics retrieved successfully",
-                    data=[TopicResponseDTO.model_validate(t) for t in topics]
+                    data=[TopicDTO.model_validate(t) for t in topics]
                 )
             except Exception as e:
                 raise HTTPException(
@@ -456,7 +405,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Published topics retrieved successfully",
-                    data=[TopicResponseDTO.model_validate(t) for t in topics]
+                    data=[TopicDTO.model_validate(t) for t in topics]
                 )
             except Exception as e:
                 raise HTTPException(
@@ -484,7 +433,7 @@ class CourseManagementRouter:
             return ApiResponseDTO(
                 status="success",
                 message="Topic retrieved successfully",
-                data=TopicResponseDTO.model_validate(topic)
+                data=TopicDTO.model_validate(topic)
             )
 
         @self.router.put(
@@ -495,7 +444,7 @@ class CourseManagementRouter:
         )
         def update_topic(
             topic_id: str,
-            dto: TopicUpdateDTO,
+            dto: TopicDTO,
             topic_service: TopicService = Depends(get_topic_service)
         ):
             """Update a topic"""
@@ -509,7 +458,7 @@ class CourseManagementRouter:
                 return ApiResponseDTO(
                     status="success",
                     message="Topic updated successfully",
-                    data=TopicResponseDTO.model_validate(topic)
+                    data=TopicDTO.model_validate(topic)
                 )
             except ValueError as e:
                 raise HTTPException(
@@ -539,3 +488,51 @@ class CourseManagementRouter:
                 message="Topic deleted successfully",
                 data=None
             )
+
+
+        @self.router.get(
+            "/get_course_by_id/{course_id}",
+            response_model=ApiResponseDTO,
+            status_code=status.HTTP_200_OK,
+            summary="Get a course by ID"
+        )
+        def get_course_by_id(
+            course_id: str,
+            course_service: CourseService = Depends(get_course_service)
+        ):
+            """Get a course by ID"""
+            course = course_service.get_course_by_id(course_id)
+            if not course:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Course not found"
+                )
+            return ApiResponseDTO(
+                status="success",
+                message="Course retrieved successfully",
+                data=CourseDTO.model_validate(course)
+            )
+        @self.router.post(
+            "/create_or_update_course",
+            response_model=ApiResponseDTO,
+            status_code=status.HTTP_200_OK,
+            summary="Create or update a course with full hierarchy"
+        )
+        def create_or_update_course(
+            dto: CourseDTO,
+            course_service: CourseService = Depends(get_course_service)
+        ):
+            """Create or update a course with full hierarchy"""
+            try:
+                course = course_service.create_or_update_course(dto)
+                return ApiResponseDTO(
+                    status="success",
+                    message="Course created/updated successfully",
+                    data=CourseDTO.model_validate(course)
+                )
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )       
+            

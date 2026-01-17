@@ -2,10 +2,10 @@
 
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from app.core.dto.coursedto import CourseDTO
 from app.infrastructure.db.repositories.course_repository import CourseRepository
 from app.infrastructure.db.repositories.user_repository import UserRepository
 from app.infrastructure.db.models.course import Course
-from app.core.dto.coursedto import CourseDTO, CourseUpdateDTO
 
 
 class CourseService:
@@ -47,27 +47,14 @@ class CourseService:
         """Get courses by instructor"""
         return CourseRepository.get_courses_by_instructor(self.db, instructor_id)
 
-    def update_course(self, course_id: str, dto: CourseUpdateDTO) -> Course:
-        """Update course"""
-        course = CourseRepository.get_course_by_id(self.db, course_id)
-        if not course:
-            raise ValueError("Course not found")
-        
-        # Check if new code conflicts
-        if dto.code and dto.code != course.code:
-            existing = CourseRepository.get_course_by_code(self.db, dto.code)
-            if existing:
-                raise ValueError(f"Course with code {dto.code} already exists")
-        
-        # Validate instructor_id if provided
-        if dto.instructor_id:
-            instructor = UserRepository.get_user_by_id(self.db, dto.instructor_id)
-            if not instructor:
-                raise ValueError(f"Instructor with ID {dto.instructor_id} does not exist")
-        
-        update_data = dto.model_dump(exclude_none=True)
-        return CourseRepository.update_course(self.db, course_id, update_data)
-
     def delete_course(self, course_id: str) -> bool:
         """Delete course"""
         return CourseRepository.delete_course(self.db, course_id)
+
+    def get_course_by_id(self, course_id: str) :
+        """Get course by ID"""
+        return self.course_repo.get_by_id(course_id)
+    def create_or_update_course(self, course_dto: CourseDTO) -> CourseDTO:
+        """Create or update course with full hierarchy"""
+        course = self.course_repo.create_or_update(course_dto.model_dump())
+        return CourseDTO.model_validate(course) 

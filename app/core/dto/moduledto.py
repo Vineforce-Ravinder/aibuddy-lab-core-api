@@ -4,40 +4,23 @@ from pydantic import BaseModel, Field
 from typing import Optional, Any, List
 from datetime import datetime
 
+from app.infrastructure.mappers.course_mapper_pydantic import TopicDTO
+
 # ========================================
 # MODULE DTOs
 # ========================================
 
-class ModuleBaseDTO(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
-    order: Optional[int] = Field(None)
-
-class ModuleDTO(ModuleBaseDTO):
-    """DTO for creating a module"""
-    course_id: str = Field(...)
-
-class ModuleUpdateDTO(BaseModel):
-    """DTO for updating a module"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
-    order: Optional[int] = Field(None)
-    is_active: Optional[bool] = Field(None)
-
-class ModuleResponseDTO(ModuleBaseDTO):
-    """DTO for module API response"""
+class ModuleDTO(BaseModel):
     id: str
-    course_id: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-    topics: Optional[List['TopicResponseDTOWithoutModule']] = None
-    
+    title: str
+    description:str
+    order:int
+    topics: List[TopicDTO]
+
     class Config:
         from_attributes = True
 
-from app.core.dto.topicdto import TopicResponseDTOWithoutModule
-ModuleResponseDTO.model_rebuild()
+
 
 # ========================================
 # API Response Wrapper

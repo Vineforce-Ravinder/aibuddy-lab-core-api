@@ -1,7 +1,9 @@
 # app/core/dto/coursedto.py
 
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, Any, TYPE_CHECKING
+from app.core.dto.moduledto import ModuleDTO
+from app.utility.app_enum import TopicDetailType
+from pydantic import BaseModel, Field ,ConfigDict
+from typing import Optional, List, Any,TYPE_CHECKING
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -11,45 +13,37 @@ if TYPE_CHECKING:
 # COURSE DTOs
 # ========================================
 
-class CourseBaseDTO(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255)
+class CourseDTO(BaseModel):
+    course_id: str = Field(...)
+    title: str = Field(..., min_length=1, max_length=255)
     code: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=2000)
-    instructor_id: Optional[str] = Field(None)
-    duration_hours: Optional[str] = Field(None)
     level: Optional[str] = Field(None)  # beginner, intermediate, advanced
+    modules: List[ModuleDTO] = []
 
-class CourseDTO(CourseBaseDTO):
-    """DTO for creating a course"""
-    pass
 
-class CourseUpdateDTO(BaseModel):
-    """DTO for updating a course"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    code: Optional[str] = Field(None, min_length=1, max_length=50)
-    description: Optional[str] = Field(None, max_length=2000)
-    instructor_id: Optional[str] = Field(None)
-    duration_hours: Optional[str] = Field(None)
-    level: Optional[str] = Field(None)
-    is_active: Optional[bool] = Field(None)
-    is_published: Optional[bool] = Field(None)
 
-class CourseResponseDTO(CourseBaseDTO):
-    """DTO for course API response with nested modules and topics"""
-    id: str
-    is_active: bool
-    is_published: bool
-    created_at: datetime
-    updated_at: datetime
-    modules: Optional[List['ModuleResponseDTO']] = None
-    
+class TopicDetailDTO(BaseModel):
+    id: int
+    type: TopicDetailType
+    content: str
+    order:int
+
     class Config:
         from_attributes = True
 
-# Import and rebuild after ModuleResponseDTO is defined
-from app.core.dto.moduledto import ModuleResponseDTO
-CourseResponseDTO.model_rebuild()
 
+
+class CourseDTO(BaseModel):
+    id: str
+    code:str
+    title:str
+    description:str
+    modules: List[ModuleDTO]
+
+    class Config:
+        from_attributes = True
+        
 # ========================================
 # API Response Wrapper
 # ========================================

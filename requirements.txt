@@ -31,3 +31,5 @@ bcrypt
 passlib[bcrypt]
 python-jose[cryptography]
 
+# ---------- Mapping & DTOs ----------
+marshmallow

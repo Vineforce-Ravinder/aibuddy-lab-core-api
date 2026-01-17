@@ -34,8 +34,12 @@ class Topic(BaseModel):
     # ---------- Foreign Keys ----------
     module_id = Column(String(36), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False, index=True)
     
+    
+    # ---------- Relationships ----------
+    details = relationship("TopicDetail", backref="topic", lazy="select", cascade="all, delete-orphan")
+    
     # ---------- Topic Information ----------
-    name = Column(String(255), nullable=False)
+    title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     content = Column(Text, nullable=True)  # Rich text content
     order = Column(Integer, nullable=True)  # Display order within module

@@ -5,7 +5,7 @@ from typing import List, Optional
 from app.infrastructure.db.repositories.module_repository import ModuleRepository
 from app.infrastructure.db.repositories.course_repository import CourseRepository
 from app.infrastructure.db.models.module import Module
-from app.core.dto.moduledto import ModuleDTO, ModuleUpdateDTO
+from app.core.dto.moduledto import ModuleDTO
 
 
 class ModuleService:
@@ -37,7 +37,7 @@ class ModuleService:
         """Get active modules for course"""
         return ModuleRepository.get_active_modules_by_course(self.db, course_id)
 
-    def update_module(self, module_id: str, dto: ModuleUpdateDTO) -> Module:
+    def update_module(self, module_id: str, dto: ModuleDTO) -> Module:
         """Update module"""
         module = ModuleRepository.get_module_by_id(self.db, module_id)
         if not module:

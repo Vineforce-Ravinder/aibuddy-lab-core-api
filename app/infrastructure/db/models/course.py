@@ -32,14 +32,13 @@ class Course(BaseModel):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # ---------- Course Information ----------
-    name = Column(String(255), nullable=False, index=True)
+    title = Column(String(512), nullable=False, index=True)
     description = Column(Text, nullable=True)
     code = Column(String(50), unique=True, nullable=False)
     
     # ---------- Metadata ----------
-    instructor_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    duration_hours = Column(String(100), nullable=True)
-    level = Column(String(50), nullable=True)  # beginner, intermediate, advanced
+    
+    level = Column(String(128), nullable=True)  # beginner, intermediate, advanced
     
     # ---------- Status ----------
     is_active = Column(Boolean, default=True, index=True)
