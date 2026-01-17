@@ -45,7 +45,10 @@ class ModuleService:
         
         update_data = dto.model_dump(exclude_none=True)
         return ModuleRepository.update_module(self.db, module_id, update_data)
-
+    
     def delete_module(self, module_id: str) -> bool:
         """Delete module"""
+        module = ModuleRepository.get_module_by_id(self.db, module_id)
+        if not module:
+            raise ValueError("Module not found")
         return ModuleRepository.delete_module(self.db, module_id)
