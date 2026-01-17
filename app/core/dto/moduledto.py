@@ -1,7 +1,7 @@
 # app/core/dto/moduledto.py
 
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional, Any, List
 from datetime import datetime
 
 # ========================================
@@ -31,9 +31,13 @@ class ModuleResponseDTO(ModuleBaseDTO):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    topics: Optional[List['TopicResponseDTOWithoutModule']] = None
     
     class Config:
         from_attributes = True
+
+from app.core.dto.topicdto import TopicResponseDTOWithoutModule
+ModuleResponseDTO.model_rebuild()
 
 # ========================================
 # API Response Wrapper

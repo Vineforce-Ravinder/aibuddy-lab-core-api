@@ -43,6 +43,18 @@ class TopicResponseDTO(TopicBaseDTO):
     class Config:
         from_attributes = True
 
+class TopicResponseDTOWithoutModule(TopicBaseDTO):
+    """DTO for topic API response (minimal)"""
+    id: str
+    module_id: str
+    is_active: bool
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 # ========================================
 # API Response Wrapper
 # ========================================

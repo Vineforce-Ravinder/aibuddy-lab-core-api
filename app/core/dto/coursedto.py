@@ -1,8 +1,11 @@
 # app/core/dto/coursedto.py
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Any
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List, Any, TYPE_CHECKING
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.core.dto.moduledto import ModuleResponseDTO
 
 # ========================================
 # COURSE DTOs
@@ -32,15 +35,20 @@ class CourseUpdateDTO(BaseModel):
     is_published: Optional[bool] = Field(None)
 
 class CourseResponseDTO(CourseBaseDTO):
-    """DTO for course API response"""
+    """DTO for course API response with nested modules and topics"""
     id: str
     is_active: bool
     is_published: bool
     created_at: datetime
     updated_at: datetime
+    modules: Optional[List['ModuleResponseDTO']] = None
     
     class Config:
         from_attributes = True
+
+# Import and rebuild after ModuleResponseDTO is defined
+from app.core.dto.moduledto import ModuleResponseDTO
+CourseResponseDTO.model_rebuild()
 
 # ========================================
 # API Response Wrapper
